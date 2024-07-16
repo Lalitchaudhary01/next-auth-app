@@ -2,31 +2,32 @@ import nodemailer from 'nodemailer'
 import User from '@/models/userModel'
 import bcryptjs from 'bcryptjs';
 
-export const sendEmail = async({email, emailType, userId}:any) => 
-    {
-        try{
-            //todo configure mail for usage
-            // create a hased token
+export const sendEmail = async ({ email, emailType, userId }: any) => {
+    try {
+        // create a hashed token
         const hashedToken = await bcryptjs.hash(userId.toString(), 10)
-            if (emailType === "VERIFY") {
-                await User.findByIdAndUpdate(userId, 
-                    {verifyToken: hashedToken, verifyTokenExpiry: Date.now() + 3600000})
-            } else if (emailType === "RESET"){
-                await User.findByIdAndUpdate(userId, 
-                    {forgotPasswordToken: hashedToken, forgotPasswordTokenExpiry: Date.now() + 3600000})
-            }
-    
-             
-            var transport = nodemailer.createTransport({
-                host: "sandbox.smtp.mailtrap.io",
-                port: 2525,
-                auth: {
-                  user: "e370c9e3e424ad",
-                  pass: "********e283"
-                }
-              });
+        console.log
+        if (emailType === "VERIFY") {
+            await User.findByIdAndUpdate(userId,
+                { 
+                    $set: {verifyToken: hashedToken, verifyTokenExpiry: Date.now() + 3600000 }})
+        } else if (emailType === "RESET") {
+            await User.findByIdAndUpdate(userId,
+                { 
+                    $set: { forgotPasswordToken: hashedToken, forgotPasswordTokenExpiry: Date.now() + 3600000 }})
+        }
 
-          const mailOptions = {
+        // configure mail transport
+        const transport = nodemailer.createTransport({
+            host: "sandbox.smtp.mailtrap.io",
+            port: 2525,
+            auth: {
+              user: "e370c9e3e424ad",
+              pass: "********e283"
+            }
+          });
+
+        const mailOptions = {
             from: 'hitesh@hitesh.ai',
             to: email,
             subject: emailType === "VERIFY" ? "Verify your email" : "Reset your password",
@@ -35,12 +36,11 @@ export const sendEmail = async({email, emailType, userId}:any) =>
             </p>`
         }
 
-        const mailResponse = await transport.sendMail
-        (mailOptions);
+        const mailResponse = await transport.sendMail(mailOptions);
         return mailResponse;
 
-        } catch (error:any){
-            throw new Error(error.message);
-
-        }
+    } catch (error: any) {
+        throw new Error(error.message);
     }
+}
+ 
